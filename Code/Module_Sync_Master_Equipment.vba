@@ -378,13 +378,10 @@ Private Sub UpdateMasterRow(loDst As ListObject, dstRow As Range, bomDict As Obj
             loc = Trim$(GetCellValue(srcRow.Range, "LOC", loSrc.Parent.ListObjects(TABLE_ALL_BOM)))
             locDesc = Trim$(GetCellValue(srcRow.Range, "LOC Description", loSrc.Parent.ListObjects(TABLE_ALL_BOM)))
             
-            If loc <> "" And locDesc <> "" Then
-                bestDesc = loc & " - " & locDesc
-            ElseIf locDesc <> "" Then
-                bestDesc = locDesc
-            ElseIf loc <> "" Then
-                bestDesc = loc
-            End If
+            ' Only use LOC Description
+			If locDesc <> "" Then
+				bestDesc = locDesc
+			End If
             descPriority = currentDescPriority
         End If
     Next bomKey
