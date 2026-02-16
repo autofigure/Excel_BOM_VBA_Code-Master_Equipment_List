@@ -67,6 +67,7 @@ Public Sub Global_Protect()
             editableCols = Array("P&ID Tags", "Include in I/O List?", _
                                 "Include in Utility Load Table?", _
                                 "Include in Heat Load & Noise Table?", _
+                                "ELEC Tags", "HYD Tags", "PNU Tags", _
                                 "User Entries", "Notes")
             
             sourceCol = GetTableColIndex(loMaster, "Source")
@@ -83,8 +84,8 @@ Public Sub Global_Protect()
                     If removedVal = "Y" Then
                         rowRange.Locked = False
                     
-                    ' 2) Manual rows stay editable
-                    ElseIf srcVal = "MAN" Then
+                    ' 2) User entries stay editable
+                    ElseIf srcVal = "N/A" Then
                         rowRange.Locked = False
                     
                     Else
@@ -668,4 +669,6 @@ QueryError:
            "4. File names match pattern: " & projNumber & "-[BOM] BOM (INTERNAL).xlsx" & vbCrLf & _
            "5. Folders named: Electrical, Hydraulic, Pneumatic, Mechanical", vbCritical
 End Sub
+
+
 

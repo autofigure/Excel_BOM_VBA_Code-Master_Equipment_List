@@ -57,7 +57,7 @@ Private Sub ManualEntryDef_Master(lo As ListObject, Optional rng As Range)
     For Each rowRange In Target.Rows
         ' Set blank Source to MAN
         If Trim$(CStr(rowRange.Cells(1, sourceCol).Value)) = "" Then
-            rowRange.Cells(1, sourceCol).Value = "MAN"
+            rowRange.Cells(1, sourceCol).Value = "N/A"
             
             ' Set defaults for new manual entries
             SetIfColExists lo, rowRange, "P&ID Tags", ""
@@ -145,3 +145,4 @@ Private Sub SetDefaultIfBlank(lo As ListObject, rowRange As Range, colTitle As S
         End If
     End If
 End Sub
+

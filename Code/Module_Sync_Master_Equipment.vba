@@ -82,6 +82,17 @@ Public Sub Run_Master_Equipment_Sync()
 
     ' 7) lock workbook again
     Global_Protect
+    
+    ' 8) Update Last_Synced timestamp
+    On Error Resume Next
+    Dim lastSyncCell As Range
+    Set lastSyncCell = ThisWorkbook.Names("Last_Synced").RefersToRange
+
+    If Not lastSyncCell Is Nothing Then
+        lastSyncCell.Value = Now
+        lastSyncCell.NumberFormat = "mm/dd/yyyy hh:mm"
+    End If
+    On Error GoTo 0
 
     MsgBox "Master Equipment List sync completed successfully!", vbInformation
 End Sub
@@ -254,14 +265,6 @@ Private Sub Sync_Master_Equipment_List()
         End With
     End If
     
-    ' --- Update LAST_SYNC_DATE ---
-    On Error Resume Next
-    With ThisWorkbook.Names("LAST_SYNC_DATE").RefersToRange
-        .Value = Now
-        .NumberFormat = "mm/dd/yyyy hh:nn"
-    End With
-    On Error GoTo 0
-    
     ' --- Build summary message ---
     msg = msg & PadRight("Parts updated:", 32) & updatedExisting & vbCrLf
     msg = msg & PadRight("Parts added:", 34) & addedNew & vbCrLf
@@ -378,10 +381,10 @@ Private Sub UpdateMasterRow(loDst As ListObject, dstRow As Range, bomDict As Obj
             loc = Trim$(GetCellValue(srcRow.Range, "LOC", loSrc.Parent.ListObjects(TABLE_ALL_BOM)))
             locDesc = Trim$(GetCellValue(srcRow.Range, "LOC Description", loSrc.Parent.ListObjects(TABLE_ALL_BOM)))
             
-            ' Only use LOC Description
-			If locDesc <> "" Then
-				bestDesc = locDesc
-			End If
+            ' Only use LOC Description, not LOC tags
+            If locDesc <> "" Then
+                bestDesc = locDesc
+            End If
             descPriority = currentDescPriority
         End If
     Next bomKey
@@ -451,6 +454,8 @@ Private Function AppendTags(existingTags As String, newTags As String) As String
         AppendTags = existingTags & ", " & newTags
     End If
 End Function
+
+
 
 
 
