@@ -19,7 +19,7 @@ Public Sub Global_Unprotect()
         .Worksheets(SHEET_UTILITY_LOAD).Unprotect ""
         .Worksheets(SHEET_HEAT_NOISE).Unprotect ""
         .Worksheets(SHEET_ALL_BOM).Unprotect ""
-        .Worksheets(SHEET_CONFIG).Unprotect ""
+        '.Worksheets(SHEET_CONFIG).Unprotect ""
         '.Worksheets(SHEET_SYNC_LOG).Unprotect ""  ' Commented - sheet doesn't exist yet
     End With
 
@@ -231,6 +231,24 @@ Public Sub Global_Protect()
     ' -------------------------------
     Set ws = ThisWorkbook.Worksheets(SHEET_PID_LOOPS)
     If Not ws Is Nothing Then
+        ' Unlock project info cells (if they exist on this sheet)
+        On Error Resume Next
+        ws.Range("C2:C7").MergeArea.Locked = False
+        On Error GoTo 0
+        
+        ' Unlock entire P&ID Loops table (all cells editable)
+        Dim loPIDLoops As ListObject
+        Set loPIDLoops = ws.ListObjects(TABLE_PID_LOOPS)
+        
+        If Not loPIDLoops Is Nothing Then
+            ' Unlock all table cells
+            If Not loPIDLoops.DataBodyRange Is Nothing Then
+                loPIDLoops.DataBodyRange.Locked = False
+            End If
+            ' Also unlock header row
+            loPIDLoops.HeaderRowRange.Locked = False
+        End If
+        
         If Not ws.ProtectContents Then
             ws.Protect Password:="", _
                        DrawingObjects:=False, _
@@ -352,26 +370,28 @@ Public Sub Global_Protect()
     
     ' -------------------------------
     ' 8) Config
+    ' Currently all the config info is just on the Master Equipment List
+    ' No need for a config sheet right now.
     ' -------------------------------
-    Set ws = ThisWorkbook.Worksheets(SHEET_CONFIG)
-    If Not ws Is Nothing Then
-        ' Unlock named cells first
-        Set rng = ThisWorkbook.Names("ThisWorkbookFolder").RefersToRange
-        If Not rng Is Nothing Then rng.Locked = False
+    'Set ws = ThisWorkbook.Worksheets(SHEET_CONFIG)
+    'If Not ws Is Nothing Then
+    '    ' Unlock named cells first
+    '    Set rng = ThisWorkbook.Names("ThisWorkbookFolder").RefersToRange
+    '    If Not rng Is Nothing Then rng.Locked = False
 
-        Set rng = ThisWorkbook.Names("DropboxStatus").RefersToRange
-        If Not rng Is Nothing Then rng.Locked = False
+    '    Set rng = ThisWorkbook.Names("DropboxStatus").RefersToRange
+    '    If Not rng Is Nothing Then rng.Locked = False
 
-        If Not ws.ProtectContents Then
-            ws.Protect Password:="", _
-                       DrawingObjects:=False, _
-                       Contents:=True, _
-                       Scenarios:=False, _
-                       AllowFiltering:=True, _
-                       AllowFormattingColumns:=True, _
-                       AllowFormattingRows:=True
-        End If
-    End If
+    '    If Not ws.ProtectContents Then
+    '        ws.Protect Password:="", _
+    '                   DrawingObjects:=False, _
+    '                   Contents:=True, _
+    '                   Scenarios:=False, _
+    '                   AllowFiltering:=True, _
+    '                   AllowFormattingColumns:=True, _
+    '                   AllowFormattingRows:=True
+    '    End If
+    'End If
 
     ' -------------------------------
     ' 9) SYNC_Log (TEMPORARILY DISABLED)

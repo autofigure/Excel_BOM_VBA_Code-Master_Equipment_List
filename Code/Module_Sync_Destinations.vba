@@ -166,8 +166,8 @@ Private Sub UpdateIORow(loIO As ListObject, ioRow As Range, masterRow As Range, 
     SetCellValue loIO, ioRow, "ELEC Tag", elecTag
     
     ' Only set Description and Notes if they're currently blank (preserve user edits)
-    If Trim$(GetCellValueFromTable(loIO, ioRow, "Description")) = "" Then
-        SetCellValue loIO, ioRow, "Description", GetCellValue(masterRow, "Functional Description", loMaster)
+    If Trim$(GetCellValueFromTable(loIO, ioRow, "Functional Description")) = "" Then
+        SetCellValue loIO, ioRow, "Functional Description", GetCellValue(masterRow, "Functional Description", loMaster)
     End If
     
     If Trim$(GetCellValueFromTable(loIO, ioRow, "Notes")) = "" Then
@@ -304,8 +304,8 @@ Private Sub UpdatePIDRow(loPID As ListObject, pidRow As Range, masterRow As Rang
     SetCellValue loPID, pidRow, "P&ID Tag", pidTag
     
     ' Only set Description and Notes if they're currently blank (preserve user edits)
-    If Trim$(GetCellValueFromTable(loPID, pidRow, "Description")) = "" Then
-        SetCellValue loPID, pidRow, "Description", GetCellValue(masterRow, "Functional Description", loMaster)
+    If Trim$(GetCellValueFromTable(loPID, pidRow, "Functional Description")) = "" Then
+        SetCellValue loPID, pidRow, "Functional Description", GetCellValue(masterRow, "Functional Description", loMaster)
     End If
     
     If Trim$(GetCellValueFromTable(loPID, pidRow, "Notes")) = "" Then
@@ -453,6 +453,11 @@ Private Sub UpdateUtilityLoadRow(loUtil As ListObject, utilRow As Range, masterR
     SetCellValue loUtil, utilRow, "HYD Tags", GetCellValue(masterRow, "HYD Tags", loMaster)
     SetCellValue loUtil, utilRow, "PNU Tags", GetCellValue(masterRow, "PNU Tags", loMaster)
     
+    ' Copy description if destination column is blank (preserve user edits)
+    If Trim$(GetCellValueFromTable(loUtil, utilRow, "Functional Description")) = "" Then
+        SetCellValue loUtil, utilRow, "Functional Description", GetCellValue(masterRow, "Functional Description", loMaster)
+    End If
+    
     ' Leave all load data columns blank (user entry)
 End Sub
 
@@ -555,6 +560,11 @@ Private Sub UpdateHeatNoiseRow(loHeat As ListObject, heatRow As Range, masterRow
     SetCellValue loHeat, heatRow, "ELEC Tags", GetCellValue(masterRow, "ELEC Tags", loMaster)
     SetCellValue loHeat, heatRow, "HYD Tags", GetCellValue(masterRow, "HYD Tags", loMaster)
     SetCellValue loHeat, heatRow, "PNU Tags", GetCellValue(masterRow, "PNU Tags", loMaster)
+    
+    ' Copy description if destination column is blank (preserve user edits)
+    If Trim$(GetCellValueFromTable(loHeat, heatRow, "Functional Description")) = "" Then
+        SetCellValue loHeat, heatRow, "Functional Description", GetCellValue(masterRow, "Functional Description", loMaster)
+    End If
     
     ' Leave heat/noise data columns blank (user entry)
 End Sub

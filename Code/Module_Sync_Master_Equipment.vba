@@ -79,20 +79,22 @@ Public Sub Run_Master_Equipment_Sync()
 
     ' 6) normalize / lock / shade tables
     Post_Sync_Format
-
-    ' 7) lock workbook again
-    Global_Protect
     
-    ' 8) Update Last_Synced timestamp
+    ' 7) Update Last_Synced timestamp (merged cell)
     On Error Resume Next
     Dim lastSyncCell As Range
     Set lastSyncCell = ThisWorkbook.Names("Last_Synced").RefersToRange
-
+    
     If Not lastSyncCell Is Nothing Then
-        lastSyncCell.Value = Now
-        lastSyncCell.NumberFormat = "mm/dd/yyyy hh:mm"
+        Application.EnableEvents = False
+        lastSyncCell.MergeArea.Value = Now
+        lastSyncCell.MergeArea.NumberFormat = "mm/dd/yyyy hh:mm"
+        Application.EnableEvents = True
     End If
     On Error GoTo 0
+
+    ' 8) lock workbook again
+    Global_Protect
 
     MsgBox "Master Equipment List sync completed successfully!", vbInformation
 End Sub
@@ -289,7 +291,8 @@ Private Sub UpdateMasterRow(loDst As ListObject, dstRow As Range, bomDict As Obj
     Dim sources As String
     Dim totalAssyQty As Long, totalQty As Long, totalNeedQty As Long
     Dim elecTags As String, hydTags As String, pnuTags As String
-    Dim bestDesc As String
+    Dim bestFuncDesc As String  ' from LOC Description (highest priority BOM)
+    Dim bestDesc As String      ' from Description (owner BOM)
     Dim descPriority As Long ' 1=MECH, 2=ELEC, 3=PNU, 4=HYD
     Dim mfg As String, partNum As String
     Dim ownerBOM As String
@@ -302,6 +305,8 @@ Private Sub UpdateMasterRow(loDst As ListObject, dstRow As Range, bomDict As Obj
     elecTags = ""
     hydTags = ""
     pnuTags = ""
+    bestFuncDesc = ""
+    bestDesc = ""
     descPriority = 0
     ownerPriority = 0
     ownerBOM = ""
@@ -348,9 +353,10 @@ Private Sub UpdateMasterRow(loDst As ListObject, dstRow As Range, bomDict As Obj
             totalQty = totalQty + qty
             totalNeedQty = totalNeedQty + needQty
             
-            ' Owner BOM provides manufacturer and part number
+            ' Owner BOM provides manufacturer, part number, and Description
             mfg = GetCellValue(srcRow.Range, "Manufacturer", loSrc.Parent.ListObjects(TABLE_ALL_BOM))
             partNum = GetCellValue(srcRow.Range, "Part Number", loSrc.Parent.ListObjects(TABLE_ALL_BOM))
+            bestDesc = Trim$(GetCellValue(srcRow.Range, "Description", loSrc.Parent.ListObjects(TABLE_ALL_BOM)))
         Else
             ' Non-owner: only contribute Need QTY
             totalNeedQty = totalNeedQty + needQty
@@ -383,7 +389,7 @@ Private Sub UpdateMasterRow(loDst As ListObject, dstRow As Range, bomDict As Obj
             
             ' Only use LOC Description, not LOC tags
             If locDesc <> "" Then
-                bestDesc = locDesc
+                bestFuncDesc = locDesc
             End If
             descPriority = currentDescPriority
         End If
@@ -399,7 +405,8 @@ Private Sub UpdateMasterRow(loDst As ListObject, dstRow As Range, bomDict As Obj
     SetCellValue loDst, dstRow, "ELEC Tags", elecTags
     SetCellValue loDst, dstRow, "HYD Tags", hydTags
     SetCellValue loDst, dstRow, "PNU Tags", pnuTags
-    SetCellValue loDst, dstRow, "Functional Description", bestDesc
+    SetCellValue loDst, dstRow, "Functional Description", bestFuncDesc
+    SetCellValue loDst, dstRow, "Description", bestDesc
 End Sub
 
 
