@@ -297,6 +297,10 @@ Private Sub UpdateMasterRow(loDst As ListObject, dstRow As Range, bomDict As Obj
     Dim mfg As String, partNum As String
     Dim ownerBOM As String
     Dim ownerPriority As Long
+    ' Track which BOM sources were present for this part
+    ' Only tag columns for present BOMs will be overwritten;
+    ' absent-BOM tag columns are left alone (preserving manual user entries)
+    Dim hasELEC As Boolean, hasHYD As Boolean, hasPNU As Boolean
     
     sources = ""
     totalAssyQty = 0
@@ -310,6 +314,9 @@ Private Sub UpdateMasterRow(loDst As ListObject, dstRow As Range, bomDict As Obj
     descPriority = 0
     ownerPriority = 0
     ownerBOM = ""
+    hasELEC = False
+    hasHYD = False
+    hasPNU = False
     
     ' First pass: Determine owner based on hierarchy
     For Each bomKey In bomDict.Keys
@@ -367,10 +374,13 @@ Private Sub UpdateMasterRow(loDst As ListObject, dstRow As Range, bomDict As Obj
         locTags = GetCellValue(srcRow.Range, "LOC", loSrc.Parent.ListObjects(TABLE_ALL_BOM))
         
         If bomSource = "ELEC" Then
+            hasELEC = True
             elecTags = AppendTags(elecTags, locTags)
         ElseIf bomSource = "HYD" Then
+            hasHYD = True
             hydTags = AppendTags(hydTags, locTags)
         ElseIf bomSource = "PNU" Then
+            hasPNU = True
             pnuTags = AppendTags(pnuTags, locTags)
         End If
         
@@ -402,9 +412,12 @@ Private Sub UpdateMasterRow(loDst As ListObject, dstRow As Range, bomDict As Obj
     SetCellValue loDst, dstRow, "Assy QTY", totalAssyQty
     SetCellValue loDst, dstRow, "QTY", totalQty
     SetCellValue loDst, dstRow, "Need QTY", totalNeedQty
-    SetCellValue loDst, dstRow, "ELEC Tags", elecTags
-    SetCellValue loDst, dstRow, "HYD Tags", hydTags
-    SetCellValue loDst, dstRow, "PNU Tags", pnuTags
+    ' Only overwrite tag columns if that BOM was actually present for this part.
+    ' If the part is absent from a BOM, the existing cell value is preserved so
+    ' that manually-entered tags for that discipline are not wiped out on re-sync.
+    If hasELEC Then SetCellValue loDst, dstRow, "ELEC Tags", elecTags
+    If hasHYD Then SetCellValue loDst, dstRow, "HYD Tags", hydTags
+    If hasPNU Then SetCellValue loDst, dstRow, "PNU Tags", pnuTags
     SetCellValue loDst, dstRow, "Functional Description", bestFuncDesc
     SetCellValue loDst, dstRow, "Description", bestDesc
 End Sub
@@ -461,6 +474,10 @@ Private Function AppendTags(existingTags As String, newTags As String) As String
         AppendTags = existingTags & ", " & newTags
     End If
 End Function
+
+
+
+
 
 
 

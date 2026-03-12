@@ -99,6 +99,8 @@ Private Sub MarkLockedItems_Master(lo As ListObject)
     If sourceCol = 0 Or removedCol = 0 Or itemCol = 0 Then Exit Sub
 
     Application.ScreenUpdating = False
+    
+    Global_Unprotect
 
     For r = 1 To lo.DataBodyRange.Rows.Count
         Set sourceCell = lo.DataBodyRange.Cells(r, sourceCol)

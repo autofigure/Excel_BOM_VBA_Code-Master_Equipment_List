@@ -68,7 +68,17 @@ Public Sub Global_Protect()
                                 "Include in Utility Load Table?", _
                                 "Include in Heat Load & Noise Table?", _
                                 "ELEC Tags", "HYD Tags", "PNU Tags", _
-                                "User Entries", "Notes")
+                                "User Entries", "Notes", _
+                                "Cabinet / Location QTY", _
+                                "Load Factor / Duty Cycle (%)", _
+                                "Power", _
+                                "Power Units", _
+                                "Voltage", _
+                                "Voltage Type / Phase", _
+                                "Current / F.L.A.", _
+                                "Efficiency / Losses", _
+                                "Efficiency / Loss Units", _
+                                "Noise (dBA)")
             
             sourceCol = GetTableColIndex(loMaster, "Source")
             removedCol = GetTableColIndex(loMaster, "Removed from BOM")
@@ -179,7 +189,7 @@ Public Sub Global_Protect()
         
         If Not loPID Is Nothing And Not loPID.DataBodyRange Is Nothing Then
             Dim lockedColsPID As Variant
-            lockedColsPID = Array("Master Equipment List Item", "Manufacturer", "Part Number", "P&ID Tag")
+            lockedColsPID = Array("Master Equipment List Item", "Manufacturer", "Part Number", "P&ID Tag", "Loop / Equipment #")
             
             Dim itemColPID As Long
             Dim rPID As Long, cPID As Long
@@ -316,9 +326,9 @@ Public Sub Global_Protect()
         Set loHeat = ws.ListObjects(TABLE_HEAT_NOISE)
         
         If Not loHeat Is Nothing And Not loHeat.DataBodyRange Is Nothing Then
-            Dim lockedColsHeat As Variant
-            lockedColsHeat = Array("Master Equipment List Item", "QTY", "Manufacturer", "Part Number", _
-                                   "P&ID Tags", "ELEC Tags", "HYD Tags", "PNU Tags")
+            ' Lock everything EXCEPT Notes (all data comes from master)
+            Dim editableColsHeat As Variant
+            editableColsHeat = Array("Notes")
             
             Dim rHeat As Long, cHeat As Long
             Dim rowRangeHeat As Range
@@ -330,13 +340,41 @@ Public Sub Global_Protect()
                 For cHeat = 1 To loHeat.ListColumns.Count
                     colNameHeat = loHeat.ListColumns(cHeat).Name
                     
-                    If IsInArray(colNameHeat, lockedColsHeat) Then
-                        rowRangeHeat.Cells(1, cHeat).Locked = True
-                    Else
+                    If IsInArray(colNameHeat, editableColsHeat) Then
                         rowRangeHeat.Cells(1, cHeat).Locked = False
+                    Else
+                        rowRangeHeat.Cells(1, cHeat).Locked = True
                     End If
                 Next cHeat
             Next rHeat
+        End If
+        
+        ' Also handle the Heat_Noise_Totals table on the same sheet
+        Dim loTotals As ListObject
+        Set loTotals = ws.ListObjects(TABLE_HEAT_NOISE_TOTALS)
+        
+        If Not loTotals Is Nothing And Not loTotals.DataBodyRange Is Nothing Then
+            ' Unlock specific user-entry columns in totals table
+            Dim editableColsTotals As Variant
+            editableColsTotals = Array("Target Cabinet Temp (°F)", "Height (in)", "Width (in)", "Depth (in)", "Notes")
+            
+            Dim rTotals As Long, cTotals As Long
+            Dim rowRangeTotals As Range
+            Dim colNameTotals As String
+            
+            For rTotals = 1 To loTotals.DataBodyRange.Rows.Count
+                Set rowRangeTotals = loTotals.DataBodyRange.Rows(rTotals)
+                
+                For cTotals = 1 To loTotals.ListColumns.Count
+                    colNameTotals = loTotals.ListColumns(cTotals).Name
+                    
+                    If IsInArray(colNameTotals, editableColsTotals) Then
+                        rowRangeTotals.Cells(1, cTotals).Locked = False
+                    Else
+                        rowRangeTotals.Cells(1, cTotals).Locked = True
+                    End If
+                Next cTotals
+            Next rTotals
         End If
         
         If Not ws.ProtectContents Then
@@ -689,6 +727,10 @@ QueryError:
            "4. File names match pattern: " & projNumber & "-[BOM] BOM (INTERNAL).xlsx" & vbCrLf & _
            "5. Folders named: Electrical, Hydraulic, Pneumatic, Mechanical", vbCritical
 End Sub
+
+
+
+
 
 
 

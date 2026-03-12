@@ -22,6 +22,7 @@ Public Const TABLE_PID_TAG_LIST As String = "PID_Tag_List"
 Public Const TABLE_PID_LOOPS As String = "PID_Loops"
 Public Const TABLE_UTILITY_LOAD As String = "Utility_Load"
 Public Const TABLE_HEAT_NOISE As String = "Heat_Noise"
+Public Const TABLE_HEAT_NOISE_TOTALS As String = "Heat_Noise_Totals"
 Public Const TABLE_ALL_BOM As String = "All_BOM_Parts"
 Public Const TABLE_SYNC_LOG As String = "Sync_Log"
 
@@ -100,5 +101,6 @@ End Function
 Public Function wsSyncLog() As Worksheet
     Set wsSyncLog = ThisWorkbook.Worksheets(SHEET_SYNC_LOG)
 End Function
+
 
 

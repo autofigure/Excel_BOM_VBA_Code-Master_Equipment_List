@@ -12,6 +12,9 @@ Public Sub Apply_Changes()
     ' Sync to destination tables only
     Sync_All_Destinations
     
+    ' Calculate Heat/Noise zone totals
+    Calculate_Heat_Noise_Totals
+    
     ' Apply formatting and locking
     Post_Sync_Format
     
@@ -312,7 +315,31 @@ Private Sub UpdatePIDRow(loPID As ListObject, pidRow As Range, masterRow As Rang
         SetCellValue loPID, pidRow, "Notes", GetCellValue(masterRow, "Notes", loMaster)
     End If
     
-    ' Leave Loop/Equipment Number and Instrument/Equipment blank (user entry)
+    ' Copy discipline tags only if destination is blank AND master has data (preserve user edits)
+    Dim masterElecTags As String, masterHydTags As String, masterPnuTags As String
+    masterElecTags = Trim$(GetCellValue(masterRow, "ELEC Tags", loMaster))
+    masterHydTags = Trim$(GetCellValue(masterRow, "HYD Tags", loMaster))
+    masterPnuTags = Trim$(GetCellValue(masterRow, "PNU Tags", loMaster))
+    
+    If masterElecTags <> "" Then
+        If Trim$(GetCellValueFromTable(loPID, pidRow, "ELEC Tag")) = "" Then
+            SetCellValue loPID, pidRow, "ELEC Tag", masterElecTags
+        End If
+    End If
+    
+    If masterHydTags <> "" Then
+        If Trim$(GetCellValueFromTable(loPID, pidRow, "HYD Tag")) = "" Then
+            SetCellValue loPID, pidRow, "HYD Tag", masterHydTags
+        End If
+    End If
+    
+    If masterPnuTags <> "" Then
+        If Trim$(GetCellValueFromTable(loPID, pidRow, "PNU Tag")) = "" Then
+            SetCellValue loPID, pidRow, "PNU Tag", masterPnuTags
+        End If
+    End If
+    
+    ' Leave Loop/Equipment # and Instrument/Equipment blank (user entry)
 End Sub
 
 
@@ -326,27 +353,30 @@ Private Sub SortPIDTagList(loPID As ListObject)
     With loPID.Sort
         .SortFields.Clear
         
-        ' Sort by Master Equipment List Item first
         On Error Resume Next
-        If GetTableColIndex(loPID, "Master Equipment List Item") > 0 Then
-            .SortFields.Add key:=loPID.ListColumns("Master Equipment List Item").Range, _
+        
+        ' Primary sort: Loop / Equipment # (ascending)
+        If GetTableColIndex(loPID, "Loop / Equipment #") > 0 Then
+            .SortFields.Add key:=loPID.ListColumns("Loop / Equipment #").Range, _
+                            SortOn:=xlSortOnValues, Order:=xlAscending, _
+                            DataOption:=xlSortTextAsNumbers
+        End If
+        
+        ' Secondary sort: Instrument / Equipment? (Z to A = descending)
+        If GetTableColIndex(loPID, "Instrument / Equipment?") > 0 Then
+            .SortFields.Add key:=loPID.ListColumns("Instrument / Equipment?").Range, _
+                            SortOn:=xlSortOnValues, Order:=xlDescending, _
+                            DataOption:=xlSortTextAsNumbers
+        End If
+        
+        ' Tertiary sort: Functional Description (ascending)
+        If GetTableColIndex(loPID, "Functional Description") > 0 Then
+            .SortFields.Add key:=loPID.ListColumns("Functional Description").Range, _
                             SortOn:=xlSortOnValues, Order:=xlAscending, _
                             DataOption:=xlSortNormal
         End If
         
-        ' Then by Instrument/Equipment
-        If GetTableColIndex(loPID, "Instrument / Equipment?") > 0 Then
-            .SortFields.Add key:=loPID.ListColumns("Instrument / Equipment?").Range, _
-                            SortOn:=xlSortOnValues, Order:=xlAscending, _
-                            DataOption:=xlSortTextAsNumbers
-        End If
-        
-        ' Then by Loop/Equipment Number
-        If GetTableColIndex(loPID, "Loop / Equipment Number") > 0 Then
-            .SortFields.Add key:=loPID.ListColumns("Loop / Equipment Number").Range, _
-                            SortOn:=xlSortOnValues, Order:=xlAscending, _
-                            DataOption:=xlSortTextAsNumbers
-        End If
+        On Error GoTo 0
         
         .Header = xlYes
         .Apply
@@ -458,7 +488,15 @@ Private Sub UpdateUtilityLoadRow(loUtil As ListObject, utilRow As Range, masterR
         SetCellValue loUtil, utilRow, "Functional Description", GetCellValue(masterRow, "Functional Description", loMaster)
     End If
     
-    ' Leave all load data columns blank (user entry)
+    ' Always overwrite load data columns from master
+    SetCellValue loUtil, utilRow, "Power", GetCellValue(masterRow, "Power", loMaster)
+    SetCellValue loUtil, utilRow, "Power Units", GetCellValue(masterRow, "Power Units", loMaster)
+    SetCellValue loUtil, utilRow, "Voltage", GetCellValue(masterRow, "Voltage", loMaster)
+    SetCellValue loUtil, utilRow, "Voltage Type / Phase", GetCellValue(masterRow, "Voltage Type / Phase", loMaster)
+    SetCellValue loUtil, utilRow, "Current / F.L.A.", GetCellValue(masterRow, "Current / F.L.A.", loMaster)
+    SetCellValue loUtil, utilRow, "Efficiency / Losses", GetCellValue(masterRow, "Efficiency / Losses", loMaster)
+    SetCellValue loUtil, utilRow, "Efficiency / Loss Units", GetCellValue(masterRow, "Efficiency / Loss Units", loMaster)
+    SetCellValue loUtil, utilRow, "Load Factor / Duty Cycle (%)", GetCellValue(masterRow, "Load Factor / Duty Cycle (%)", loMaster)
 End Sub
 
 
@@ -566,7 +604,221 @@ Private Sub UpdateHeatNoiseRow(loHeat As ListObject, heatRow As Range, masterRow
         SetCellValue loHeat, heatRow, "Functional Description", GetCellValue(masterRow, "Functional Description", loMaster)
     End If
     
-    ' Leave heat/noise data columns blank (user entry)
+    ' Always overwrite load and zone data columns from master
+    SetCellValue loHeat, heatRow, "Cabinet / Location QTY", GetCellValue(masterRow, "Cabinet / Location QTY", loMaster)
+    SetCellValue loHeat, heatRow, "Power", GetCellValue(masterRow, "Power", loMaster)
+    SetCellValue loHeat, heatRow, "Power Units", GetCellValue(masterRow, "Power Units", loMaster)
+    SetCellValue loHeat, heatRow, "Efficiency / Losses", GetCellValue(masterRow, "Efficiency / Losses", loMaster)
+    SetCellValue loHeat, heatRow, "Efficiency / Loss Units", GetCellValue(masterRow, "Efficiency / Loss Units", loMaster)
+    SetCellValue loHeat, heatRow, "Load Factor / Duty Cycle (%)", GetCellValue(masterRow, "Load Factor / Duty Cycle (%)", loMaster)
+    SetCellValue loHeat, heatRow, "Noise (dBA)", GetCellValue(masterRow, "Noise (dBA)", loMaster)
+    
+    ' Copy Notes from master (overwrite — master is authoritative source)
+    SetCellValue loHeat, heatRow, "Notes", GetCellValue(masterRow, "Notes", loMaster)
+    
+    ' BTU/hr Losses is user-entered on this table — preserve existing values
+End Sub
+
+
+'===========================================================
+' CALCULATE HEAT & NOISE ZONE TOTALS (BUTTON + AUTO)
+'===========================================================
+Public Sub Calculate_Heat_Noise_Totals()
+    Dim wsHeat As Worksheet
+    Dim loHeat As ListObject
+    Dim loTotals As ListObject
+
+    Set wsHeat = ThisWorkbook.Worksheets(SHEET_HEAT_NOISE)
+    Set loHeat = wsHeat.ListObjects(TABLE_HEAT_NOISE)
+    Set loTotals = wsHeat.ListObjects(TABLE_HEAT_NOISE_TOTALS)
+
+    If loTotals Is Nothing Or loTotals.DataBodyRange Is Nothing Then
+        MsgBox "Heat_Noise_Totals table not found or empty.", vbExclamation
+        Exit Sub
+    End If
+
+    ' Get Heat & Noise table column indices
+    Dim hCabQtyCol As Long, hBTUCol As Long, hDutyCol As Long, hNoiseCol As Long, hQtyCol As Long
+    hCabQtyCol = GetTableColIndex(loHeat, "Cabinet / Location QTY")
+    hBTUCol = GetTableColIndex(loHeat, "BTU/hr Losses")
+    hDutyCol = GetTableColIndex(loHeat, "Load Factor / Duty Cycle (%)")
+    hNoiseCol = GetTableColIndex(loHeat, "Noise (dBA)")
+    hQtyCol = GetTableColIndex(loHeat, "QTY")
+
+    If hCabQtyCol = 0 Or hBTUCol = 0 Then
+        MsgBox "Required columns missing: 'Cabinet / Location QTY' and/or 'BTU/hr Losses'", vbExclamation
+        Exit Sub
+    End If
+
+    ' Get totals table column indices
+    Dim tZoneCol As Long, tHeatCol As Long, tNoiseCol As Long
+    tZoneCol = GetTableColIndex(loTotals, "Cabinet / Location")
+    tHeatCol = GetTableColIndex(loTotals, "Heat Load (BTU/Hr)")
+    tNoiseCol = GetTableColIndex(loTotals, "Noise (dB)")
+
+    If tZoneCol = 0 Or tHeatCol = 0 Then
+        MsgBox "Required columns missing in Heat_Noise_Totals table.", vbExclamation
+        Exit Sub
+    End If
+
+    ' Build zone totals dictionaries
+    ' dictHeat  stores linear BTU sum per zone (multiplied by duty cycle)
+    ' dictNoise stores sum of linear power (10^(dBA/10)) per zone — NO duty cycle
+    Dim dictHeat As Object, dictNoise As Object
+    Set dictHeat = CreateObject("Scripting.Dictionary")
+    Set dictNoise = CreateObject("Scripting.Dictionary")
+    dictHeat.CompareMode = vbTextCompare
+    dictNoise.CompareMode = vbTextCompare
+
+    If TableHasRows(loHeat) Then
+        Dim heatRow As Range
+        For Each heatRow In loHeat.DataBodyRange.Rows
+
+            Dim cabQtyText As String
+            Dim btuPerUnit As Double
+            Dim noisePerUnit As Double
+            Dim dutyCycle As Double
+            Dim rowQty As Double
+            Dim hasBTU As Boolean, hasNoise As Boolean
+
+            ' Read BTU/hr
+            hasBTU = False
+            Dim btuCell As Variant
+            btuCell = heatRow.Cells(1, hBTUCol).Value2
+            If IsNumeric(btuCell) Then
+                If CDbl(btuCell) > 0 Then
+                    btuPerUnit = CDbl(btuCell)
+                    hasBTU = True
+                End If
+            End If
+
+            ' Read Noise (dBA)
+            hasNoise = False
+            If hNoiseCol > 0 Then
+                Dim noiseCell As Variant
+                noiseCell = heatRow.Cells(1, hNoiseCol).Value2
+                If IsNumeric(noiseCell) Then
+                    If CDbl(noiseCell) > 0 Then
+                        noisePerUnit = CDbl(noiseCell)
+                        hasNoise = True
+                    End If
+                End If
+            End If
+
+            ' Skip row if nothing to contribute
+            If Not hasBTU And Not hasNoise Then GoTo NextHeatRow
+
+            ' Read cabinet/location
+            cabQtyText = Trim$(CStr(heatRow.Cells(1, hCabQtyCol).Value))
+            If cabQtyText = "" Then GoTo NextHeatRow
+
+            ' Read duty cycle — default 100% if blank
+            ' Handles both integer percentage (e.g. 75) and decimal (e.g. 0.75)
+            dutyCycle = 1#
+            If hDutyCol > 0 Then
+                Dim dutyCell As Variant
+                dutyCell = heatRow.Cells(1, hDutyCol).Value2
+                If IsNumeric(dutyCell) Then
+                    Dim dutyRaw As Double
+                    dutyRaw = CDbl(dutyCell)
+                    If dutyRaw > 1 Then
+                        dutyCycle = dutyRaw / 100   ' integer percentage e.g. 75 ? 0.75
+                    ElseIf dutyRaw > 0 Then
+                        dutyCycle = dutyRaw          ' already decimal e.g. 0.75
+                    End If
+                    ' dutyRaw = 0 leaves dutyCycle = 1.0 (default full load)
+                End If
+            End If
+
+            ' Read row QTY for single-zone fallback
+            rowQty = 1
+            If hQtyCol > 0 Then
+                Dim qtyCell As Variant
+                qtyCell = heatRow.Cells(1, hQtyCol).Value2
+                If IsNumeric(qtyCell) Then
+                    If CDbl(qtyCell) > 0 Then rowQty = CDbl(qtyCell)
+                End If
+            End If
+
+            ' Parse cabinet/location — handles "MILL" and "MILL:8, EXT:2"
+            Dim segments() As String
+            segments = Split(cabQtyText, ",")
+
+            Dim s As Long
+            For s = LBound(segments) To UBound(segments)
+                Dim segment As String
+                segment = Trim$(segments(s))
+
+                Dim zoneName As String
+                Dim zoneQty As Double
+
+                If InStr(segment, ":") > 0 Then
+                    zoneName = Trim$(Left$(segment, InStr(segment, ":") - 1))
+                    zoneQty = CDbl(Trim$(Mid$(segment, InStr(segment, ":") + 1)))
+                Else
+                    zoneName = segment
+                    zoneQty = rowQty
+                End If
+
+                If zoneName <> "" And zoneQty > 0 Then
+                    ' BTU contribution (duty cycle applied)
+                    If hasBTU Then
+                        Dim btuContrib As Double
+                        btuContrib = zoneQty * btuPerUnit * dutyCycle
+                        If dictHeat.Exists(zoneName) Then
+                            dictHeat(zoneName) = dictHeat(zoneName) + btuContrib
+                        Else
+                            dictHeat.Add zoneName, btuContrib
+                        End If
+                    End If
+
+                    ' Noise contribution — logarithmic (NO duty cycle)
+                    ' Store as sum of linear power values: zoneQty * 10^(dBA/10)
+                    If hasNoise Then
+                        Dim noiseContrib As Double
+                        noiseContrib = zoneQty * (10 ^ (noisePerUnit / 10))
+                        If dictNoise.Exists(zoneName) Then
+                            dictNoise(zoneName) = dictNoise(zoneName) + noiseContrib
+                        Else
+                            dictNoise.Add zoneName, noiseContrib
+                        End If
+                    End If
+                End If
+            Next s
+
+NextHeatRow:
+        Next heatRow
+    End If
+
+    ' Write totals
+    Global_Unprotect
+
+    Dim t As Long
+    For t = 1 To loTotals.DataBodyRange.Rows.Count
+        Dim totalsRow As Range
+        Dim zoneName2 As String
+        Set totalsRow = loTotals.DataBodyRange.Rows(t)
+        zoneName2 = Trim$(CStr(totalsRow.Cells(1, tZoneCol).Value))
+
+        ' Heat total
+        If dictHeat.Exists(zoneName2) Then
+            totalsRow.Cells(1, tHeatCol).Value = Round(dictHeat(zoneName2), 2)
+        Else
+            totalsRow.Cells(1, tHeatCol).Value = 0
+        End If
+
+        ' Noise total — convert linear power sum back to dB
+        If tNoiseCol > 0 Then
+            If dictNoise.Exists(zoneName2) Then
+                totalsRow.Cells(1, tNoiseCol).Value = Round(10 * Log(dictNoise(zoneName2)) / Log(10), 1)
+            Else
+                totalsRow.Cells(1, tNoiseCol).Value = 0
+            End If
+        End If
+    Next t
+
+    Global_Protect
+
 End Sub
 
 
@@ -617,6 +869,17 @@ Private Sub SortByItem(lo As ListObject)
     End With
     On Error GoTo 0
 End Sub
+
+
+
+
+
+
+
+
+
+
+
 
 
 
